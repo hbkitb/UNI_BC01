@@ -156,7 +156,7 @@ tableextension 50001 "Item ITB" extends Item
 
         field(50008; TotalCost; Decimal)
         {
-            Caption = 'TEK-Total Kost';
+            Caption = 'UNI-Total Kost';
             //FieldClass = FlowField;
             Editable = false;
 
@@ -164,7 +164,7 @@ tableextension 50001 "Item ITB" extends Item
 
         field(50009; TotalDG; Decimal)
         {
-            Caption = 'TEK-Total DG';
+            Caption = 'UNI-Total DG';
             //FieldClass = 
             Editable = true;
 

@@ -102,7 +102,7 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
 
         addafter(InventoryGrp)
         {
-            group(TEKFood)
+            group(Unifood)
 
             {
                 /*
