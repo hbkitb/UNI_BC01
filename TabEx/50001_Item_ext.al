@@ -203,7 +203,7 @@ tableextension 50001 "Item ITB" extends Item
         {
             Caption = 'Prod_';
             //FieldClass = FlowField;
-            Editable = false;
+            //Editable = false;
 
         }
 
@@ -234,6 +234,38 @@ tableextension 50001 "Item ITB" extends Item
         field(50012; PackCost; Decimal)
         {
             Caption = 'PakkeTillæg(Kr)';
+            trigger OnValidate()
+            var
+            //item: Record Item;
+            begin
+                //if type = Type::Item then begin
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
+
+                if Rec."Unit Price" <> 0 then
+                    Rec.TotalDG := (Rec."Unit Price" - Rec.TotalCost) / Rec."Unit Price" * 100
+                else
+                    Rec.TotalDG := 0;
+
+                Rec.TotalDG := Round(Rec.TotalDG, 0.01, '=');
+
+                //end;
+            end;
+
+
+        }
+
+        field(50013; PallePris; Decimal)
+        {
+            Caption = 'Pallepris';
+            //FieldClass = FlowField;
+            //Editable = false;
+
+        }
+
+        field(50014; EmbCost; Decimal)
+        {
+            Caption = 'EmballageTillæg(Kr)';
             trigger OnValidate()
             var
             //item: Record Item;

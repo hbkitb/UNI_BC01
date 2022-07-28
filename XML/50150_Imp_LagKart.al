@@ -191,6 +191,32 @@ xmlport 50160 "50156_Imp_LagKart"
 
         IF Item.FINDSET then
             repeat
+                Evaluate(Item.DutyCost, Felt02);
+                Evaluate(Item.FeeCost, Felt03);
+                Evaluate(Item.FreightCost, Felt04);
+                Evaluate(Item.PackCost, Felt05);
+                Evaluate(Item.EmbCost, Felt06);
+                Evaluate(Item.DivCost, Felt07);
+
+                Item.PantItem := Felt08;
+                Item.EANNr := Felt09;
+                item.Mangde := Felt10;
+
+                Evaluate(item."Indirect Cost %", Felt11);
+
+                Item.EANNr02 := Felt12;
+
+                Evaluate(item.KartAntal, Felt13);
+                Evaluate(item.PallePris, Felt14);
+
+                if Felt15 = '0' then
+                    item.Prod_ := false
+                else
+                    Item.Prod_ := true;
+
+                Item.Modify;
+
+
             /*
                 evaluate(Item.StkKrt, Felt02);
                 Item.Trykfarve1 := Felt03;

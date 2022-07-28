@@ -67,6 +67,10 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
             {
                 ApplicationArea = all;
             }
+            field(PallePris; Rec.PallePris)
+            {
+                ApplicationArea = all;
+            }
 
         }
 
@@ -91,6 +95,10 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
                 ApplicationArea = all;
             }
             field(PackCost; Rec.PackCost)
+            {
+                ApplicationArea = all;
+            }
+            field(EmbCost; Rec.EmbCost)
             {
                 ApplicationArea = all;
             }
@@ -268,124 +276,126 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
                 end;
             }
 
-            action("ENV_DEB")
-            {
-                Caption = 'TF IMP/DEB';
-                ApplicationArea = All;
+            /*
+                        action("ENV_DEB")
+                        {
+                            Caption = 'TF IMP/DEB';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('TF deb/imp');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    Xmlport.Run(xmlport::"50000_Imp_ENV_Medlem");
+                            trigger OnAction()
+                            begin
+                                Message('TF deb/imp');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                Xmlport.Run(xmlport::"50000_Imp_ENV_Medlem");
 
-                end;
-            }
-            //50000 "50000_Imp_ENV_Medlem"
+                            end;
+                        }
+                        //50000 "50000_Imp_ENV_Medlem"
 
-            action("ENV_KUR")
-            {
-                Caption = 'TF IMP/KURSUS';
-                ApplicationArea = All;
+                        action("ENV_KUR")
+                        {
+                            Caption = 'TF IMP/KURSUS';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('Envina Kursus/imp');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    Xmlport.Run(xmlport::"50001_Imp_ENV_Kursus");
+                            trigger OnAction()
+                            begin
+                                Message('Envina Kursus/imp');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                Xmlport.Run(xmlport::"50001_Imp_ENV_Kursus");
 
-                end;
-            }
+                            end;
+                        }
 
-            action("ITB_Logic")
-            {
-                Caption = 'ITB_TIL_LOGIC';
-                ApplicationArea = All;
+                        action("ITB_Logic")
+                        {
+                            Caption = 'ITB_TIL_LOGIC';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er LOGIC ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Codeunit.Run(Codeunit::"50001_ITB_UD_SIM");
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er LOGIC ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Codeunit.Run(Codeunit::"50001_ITB_UD_SIM");
+                            end;
+                        }
 
-            action("SIM_Ledtrans")
-            {
-                Caption = 'SIM_Ledtrans';
-                ApplicationArea = All;
+                        action("SIM_Ledtrans")
+                        {
+                            Caption = 'SIM_Ledtrans';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er SIM_Ledtrans ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Page.Run(Page::ITB_TEST);
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er SIM_Ledtrans ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Page.Run(Page::ITB_TEST);
+                            end;
+                        }
 
-            action("SIM_LedTable")
-            {
-                Caption = 'ACU_Finkart';
-                ApplicationArea = All;
+                        action("SIM_LedTable")
+                        {
+                            Caption = 'ACU_Finkart';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er ACU_Finkart ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Page.Run(Page::ITB_TEST_FinKart);
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er ACU_Finkart ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Page.Run(Page::ITB_TEST_FinKart);
+                            end;
+                        }
 
-            action("SIM_LedTable_OK")
-            {
-                Caption = 'SIM_Finkart';
-                ApplicationArea = All;
+                        action("SIM_LedTable_OK")
+                        {
+                            Caption = 'SIM_Finkart';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er SIM_Finkart ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Page.Run(Page::ITB_TEST_FinKart_SIM);
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er SIM_Finkart ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Page.Run(Page::ITB_TEST_FinKart_SIM);
+                            end;
+                        }
 
-            action("ITB_Acu_Logic")
-            {
-                Caption = 'ITB_ACU_LOGIC';
-                ApplicationArea = All;
+                        action("ITB_Acu_Logic")
+                        {
+                            Caption = 'ITB_ACU_LOGIC';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er Acubiz ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Codeunit.Run(Codeunit::"50002_ITB_UD_Acubiz");
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er Acubiz ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Codeunit.Run(Codeunit::"50002_ITB_UD_Acubiz");
+                            end;
+                        }
 
-            action("ITB_test_ind_bar")
-            {
-                Caption = 'ITB_test_ind_bar';
-                ApplicationArea = All;
+                        action("ITB_test_ind_bar")
+                        {
+                            Caption = 'ITB_test_ind_bar';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er bærer sk. ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Page.Run(Page::ITB_TEST_Ind_Bar);
-                end;
-            }
-            action("ITB_DimEntry")
-            {
-                Caption = 'ITB_DimEntry';
-                ApplicationArea = All;
+                            trigger OnAction()
+                            begin
+                                Message('dette er bærer sk. ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Page.Run(Page::ITB_TEST_Ind_Bar);
+                            end;
+                        }
+                        action("ITB_DimEntry")
+                        {
+                            Caption = 'ITB_DimEntry';
+                            ApplicationArea = All;
 
-                trigger OnAction()
-                begin
-                    Message('dette er DIMENTRY sk. ok');
-                    //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
-                    //Page.Run(Page::ITB_DimEntry);
-                end;
-            }
+                            trigger OnAction()
+                            begin
+                                Message('dette er DIMENTRY sk. ok');
+                                //Codeunit.Run(50149);  //50149 "50149_Diverse_OP_ERPG"
+                                //Page.Run(Page::ITB_DimEntry);
+                            end;
+                        }
+                        */
         }
 
     }
