@@ -90,7 +90,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -114,7 +114,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -138,7 +138,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -215,7 +215,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -239,7 +239,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -271,7 +271,7 @@ tableextension 50001 "Item ITB" extends Item
             //item: Record Item;
             begin
                 //if type = Type::Item then begin
-                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+                Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
                 Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
                 if Rec."Unit Price" <> 0 then
@@ -301,7 +301,7 @@ tableextension 50001 "Item ITB" extends Item
 
     begin
 
-        Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+        Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
         Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
         if Rec."Unit Price" <> 0 then
@@ -321,7 +321,7 @@ tableextension 50001 "Item ITB" extends Item
 
     begin
 
-        Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost;
+        Rec.TotalCost := Rec."Last Direct Cost" + (Rec."Last Direct Cost" * Rec."Indirect Cost %" / 100) + Rec.DivCost + Rec.FeeCost + Rec.FreightCost + Rec.DutyCost + Rec.PackCost + Rec.EmbCost;
         Rec.TotalCost := Round(Rec.TotalCost, 0.01, '=');
 
         if Rec."Unit Price" <> 0 then

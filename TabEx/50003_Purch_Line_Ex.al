@@ -67,7 +67,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
         ItemDC.Reset;
         ItemDC.SetRange("No.", Rec."No.");
         if (ItemDC.FindSet and (Rec."Direct Unit Cost" <> 0)) then begin
-            if (ItemDC.FreightCost <> 0) or (ItemDC.FeeCost <> 0) or (ItemDC.DivCost <> 0) or (ItemDC.DutyCost <> 0) or (ItemDC.PackCost <> 0) then begin
+            if (ItemDC.FreightCost <> 0) or (ItemDC.FeeCost <> 0) or (ItemDC.DivCost <> 0) or (ItemDC.DutyCost <> 0) or (ItemDC.PackCost <> 0) or (ItemDC.EmbCost <> 0) then begin
                 if Rec."Unit Cost" <> 0 then
                     ExchRate := Rec."Unit Cost (LCY)" / Rec."Unit Cost"
                 else
@@ -77,7 +77,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
                     UnitCostLCYBefore := rec."Unit Cost (LCY)";
                     //Rec."Unit Cost" := 0;
                     //Rec."Unit Cost (LCY)" := 0;
-                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost;
+                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost + ItemDC.EmbCost;
                     rec."Unit Cost (LCY)" := UnitCostLCYBefore + InDirect;
                     InDirect := InDirect / ExchRate;
                     rec."Unit Cost" := UnitCostBefore + InDirect;
@@ -90,7 +90,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
                     UnitCostLCYBefore := rec."Unit Cost (LCY)";
                     //Rec."Unit Cost" := 0;
                     //Rec."Unit Cost (LCY)" := 0;
-                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost;
+                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost + ItemDC.EmbCost;
                     rec."Unit Cost (LCY)" := UnitCostLCYBefore + InDirect;
                     InDirect := InDirect; //* ExchRate;
                     rec."Unit Cost" := UnitCostBefore + InDirect;
@@ -137,7 +137,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
         ItemDC.Reset;
         ItemDC.SetRange("No.", Rec."No.");
         if ((ItemDC.FindSet) and (Rec."Direct Unit Cost" <> 0)) then begin
-            if (ItemDC.FreightCost <> 0) or (ItemDC.FeeCost <> 0) or (ItemDC.DivCost <> 0) or (ItemDC.DutyCost <> 0) or (ItemDC.PackCost <> 0) then begin
+            if (ItemDC.FreightCost <> 0) or (ItemDC.FeeCost <> 0) or (ItemDC.DivCost <> 0) or (ItemDC.DutyCost <> 0) or (ItemDC.PackCost <> 0) or (ItemDC.EmbCost <> 0) then begin
                 if Rec."Unit Cost" <> 0 then
                     ExchRate := Rec."Unit Cost (LCY)" / Rec."Unit Cost"
                 else
@@ -147,7 +147,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
                     UnitCostLCYBefore := rec."Unit Cost (LCY)";
                     //Rec."Unit Cost" := 0;
                     //Rec."Unit Cost (LCY)" := 0;
-                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost;
+                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost + ItemDC.EmbCost;
                     //151221 rec."Unit Cost (LCY)" := UnitCostLCYBefore + InDirect;
                     rec."Unit Cost (LCY)" := (Rec."Direct Unit Cost" * ExchRate) + ((Rec."Direct Unit Cost" * ExchRate * (ItemDC."Indirect Cost %" / 100)) + InDirect);  //151221 UnitCostLCYBefore + InDirect;
                     InDirect := InDirect / ExchRate;
@@ -162,7 +162,7 @@ tableextension 50003 "Purch Line ITB" extends "Purchase Line"
                     UnitCostLCYBefore := rec."Unit Cost (LCY)";
                     //Rec."Unit Cost" := 0;
                     //Rec."Unit Cost (LCY)" := 0;
-                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost;
+                    InDirect := ItemDC.FreightCost + ItemDC.FeeCost + ItemDC.DivCost + ItemDC.DutyCost + ItemDC.PackCost + ItemDC.EmbCost;
                     //151221 rec."Unit Cost (LCY)" := UnitCostLCYBefore + InDirect;
                     rec."Unit Cost (LCY)" := (Rec."Direct Unit Cost") + ((Rec."Direct Unit Cost" * (ItemDC."Indirect Cost %" / 100)) + InDirect);  //151221 UnitCostLCYBefore + InDirect;
                     InDirect := InDirect;  /// ExchRate;
