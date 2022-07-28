@@ -66,6 +66,22 @@ tableextension 50000 "Sales Line ITB" extends "Sales Line"
 
         }
 
+        field(50004; Scan; Boolean)
+        {
+            Caption = 'Scan';
+            trigger OnValidate()
+            var
+            //item: Record Item;
+            begin
+                //if type = Type::Item then begin
+
+
+                //end;
+            end;
+
+
+        }
+
 
     }
 

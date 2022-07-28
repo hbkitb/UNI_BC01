@@ -86,6 +86,14 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
             {
                 ApplicationArea = all;
             }
+            field(DutyCost; Rec.DutyCost)
+            {
+                ApplicationArea = all;
+            }
+            field(PackCost; Rec.PackCost)
+            {
+                ApplicationArea = all;
+            }
             field(TotalCost; Rec.TotalCost)
             {
                 ApplicationArea = all;
