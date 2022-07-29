@@ -213,7 +213,7 @@ xmlport 50160 "50156_Imp_LagKart"
                     item.Prod_ := false
                 else
                     Item.Prod_ := true;
-
+                Item.Validate(DivCost);
                 Item.Modify;
 
 
