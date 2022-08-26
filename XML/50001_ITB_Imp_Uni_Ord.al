@@ -1,4 +1,4 @@
-xmlport 50001 "50001_Imp_ENV_Kursus"
+xmlport 50001 "50001_Imp_Uni_Ord"
 {
     //Import af ekstra felter fra C5 Lagerkart
 
@@ -20,15 +20,15 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
         {
             tableelement(Integer; Integer)
             {
-                XmlName = 'ImpOrdKart_ENV';
+                XmlName = 'ImpOrdKart_UNI';
                 UseTemporary = true;
-                textelement(Felt01)
+                textelement(Account_Felt01)
                 {
                 }
-                textelement(Felt02)
+                textelement(Department_Felt02)
                 {
                 }
-                textelement(Felt03)
+                textelement(Balance01_Felt03)
                 {
                     MinOccurs = Zero;
                 }
@@ -121,7 +121,7 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
                     Integer.Number := Counter;
 
 
-                    IF Felt05 <> '' THEN begin
+                    IF Account_Felt01 <> '' THEN begin
 
                         GenPostSetupImp;  //bogopsæt
                         Lin1 := false;
@@ -246,46 +246,43 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
         Felt16 := DelChr(Felt16, '<', ' ');
         Felt16 := DelChr(Felt16, '>', ' ');
 
-
-        if StrPos(Felt06, 'A - Medlem') > 0 then
-            AMedlem := true
-        else
-            AMedlem := false;
-
-        BUdenFak := false;
-        btoA := false;
+        OIOReference := '';
 
         if Lin1 = false then begin
-            DebKart.RESET;
-            DebKart.SetRange("No.", Felt05);
+            OrdKart.RESET;
+            OrdKart.SetRange("No.", Account_Felt01);
+            OrdKart.SetRange("Document Type", OrdKart."Document Type"::Order);
+            if OrdKart.FindSet then begin  //opdater salgsordre
+
+
+            end
+            else begin // check for debitor og opret salgsordre på debitor
+                DebKart.RESET;
+                DebKart.SetRange("No.", Account_Felt01);
+                if DebKart.FindSet then begin
+                    FakKonto := DebKart."No.";
+                end
+                else begin
+                    FakKonto := '99999999';
+                end;
+                // så oprettes salgsordre på fakkonto ->
+
+            end;
+
 
             //250718 GenPostSetup.SETRANGE("Gen. Bus. Posting Group",Felt01);
-
-            IF ((strlen(Felt05) > 0) and (DebKart.FINDSET)) then begin //rediger eksisterende
+            IF ((strlen(Account_Felt01) > 0) and (DebKart.FINDSET)) then begin //rediger eksisterende
                 FakKonto := '';
                 DebName := DebKart.Name;
 
-                //Message('gln-felt07: ' + Felt07);
-                if StrLen(Felt07) = 13 then begin
-                    DebStd.Reset;
-                    DebStd.SetRange("Gen. Bus. Posting Group", '03');
-                    DebStd.SetRange(GLN, Felt07);
-                    if DebStd.FindSet then
-                        FakKonto := DebStd."No.";
-                end;
-                if FakKonto = '' then begin
-                    if StrLen(Felt10) >= 5 then begin
-                        DebStd.Reset;
-                        DebStd.SetRange("Gen. Bus. Posting Group", '03');
-                        DebStd.SetRange("VAT Registration No.", Felt10);
-                        if DebStd.FindSet then
-                            FakKonto := DebStd."No.";
-                    end;
-                end;
+                FakKonto := DebKart."Bill-to Customer No.";
+
+
 
                 if FakKonto = '' then
-                    FakKonto := Felt05;
+                    FakKonto := Account_Felt01;
                 //Message('fakkonto: ' + FakKonto);
+
                 DebKart.Reset;
                 DebKart.SetRange("No.", FakKonto);
                 if DebKart.FindSet then begin
@@ -358,15 +355,15 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
                         OrdKart."External Document No." := OIOReference;   //FakKart."Fax No.";
 
                         if OIOReference = '' then begin
-                            OrdKart."Your Reference" := Felt01;
-                            OrdKart."External Document No." := Felt01;
+                            OrdKart."Your Reference" := Account_Felt01;
+                            OrdKart."External Document No." := Account_Felt01;
                         end;
 
                         if OIOReference = '' then
                             OrdKart."External Document No." := '.';
 
                         if OrdKart."Sell-to Contact" = '' then
-                            OrdKart."Sell-to Contact" := Felt02 + '.';
+                            OrdKart."Sell-to Contact" := Department_Felt02 + '.';
 
                         OrdKart."OIOUBL-GLN" := DebKart.GLN;
 
@@ -486,15 +483,7 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
                 end;  //amedlem
                       //Så kommer evt. bemærkning/note til linien                               
 
-                ComLine.Reset;
-                ComLine.Init;
-                ComLine."Document Type" := ComLine."Document Type"::Order;
-                ComLine."No." := OrdLinie."Document No.";
-                ComLine."Document Line No." := OrdLinie."Line No.";
-                ComLine."Line No." := 10000;
-                ComLine.Date := Today;
-                ComLine.Comment := Felt05 + ': ' + DebName;
-                ComLine.Insert(true);
+
 
                 //071021
                 if DebName <> '' then begin
@@ -629,67 +618,10 @@ xmlport 50001 "50001_Imp_ENV_Kursus"
 
             //150921 until DebKart.NEXT = 0
 
-            //Så kommer ompostering vedr. B-Medlemmer - FinansKladde
-            if AMedlem = false then begin
-                JLineNumber := 0;
-                GenJourLine.Reset;
-                GenJourLine.SetRange("Journal Template Name", 'B-Medlem');
-                GenJourLine.SetRange("Journal Batch Name", 'B-Medlem');
-                if GenJourLine.FindSet then
-                    repeat
-                        if GenJourLine."Line No." > JLineNumber then
-                            JLineNumber := GenJourLine."Line No.";
-                    until GenJourLine.Next = 0;
-
-                Clear(GenJourLine);
-                GenJourLine."Journal Template Name" := 'B-Medlem';
-                GenJourLine."Journal Batch Name" := 'B-Medlem';
-                JLineNumber := JLineNumber + 10000;
-                GenJourLine."Line No." := JLineNumber;
-                GenJourLine."Posting Date" := Today;
-                GenJourLine.Description := 'Omp. A-B/' + Felt05 + ':' + DebName;
-                GenJourLine.Validate("Document No.");
-                GenJourLine."Account Type" := GenJourLine."Account Type"::"G/L Account";  //Finans
-                GenJourLine."Document Date" := GenJourLine."Posting Date";
-                GenJourLine."Source Code" := 'KASSEKLD';
-                GenJourLine."Document Type" := GenJourLine."Document Type"::" ";
-                GenJourLine."Account No." := '2010';
-                GenJourLine."Bal. Account Type" := GenJourLine."Bal. Account Type"::"G/L Account";
-                GenJourLine."Bal. Account No." := '120';
-                if item.Get('110') then
-                    if Item."Unit Price" <> 0 then
-                        GenJourLine."Amount (LCY)" := Item."Unit Price"
-                    else
-                        GenJourLine."Amount (LCY)" := 300
-                else
-                    GenJourLine."Amount (LCY)" := 300;
-
-                GenJourLine.Amount := 300;
-
-                GenJourLine.Insert(true);
-
-                //så kommer dimension på linien
-                if StrLen(Felt21) > 0 then begin
-                    Centre.Reset;
-                    Centre.SetRange("Dimension Code", 'BÆRER');
-                    Centre.SetRange(Code, Felt21);
-                    if Centre.FindSet then begin
-
-                        DimMgt.GetDimensionSet(TempDimSetEntry, GenJourLine."Dimension Set ID");
-                        TempDimSetEntry.Init;
-                        TempDimSetEntry.Validate("Dimension Code", 'BÆRER');
-                        TempDimSetEntry.Validate("Dimension Value Code", Centre.Code);
-                        if not TempDimSetEntry.Insert then
-                            TempDimSetEntry.Modify;
-                        GenJourLine.Validate("Dimension Set ID", DimMgt.GetDimensionSetID(TempDimSetEntry));
-                        GenJourLine.Modify;
-                    end;
-                end;
 
 
 
-
-            end;
+            // end;
             //Her over ompostering vedr. B-Medlemmer
         end;
 
