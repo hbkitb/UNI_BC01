@@ -265,7 +265,7 @@ pageextension 50001 "Item_Card ITB" extends "Item Card"
         {
             action("ERP-TEST")
             {
-                Caption = 'ERP-I-konti';
+                Caption = 'ERP-I-konti-NYT';
                 ApplicationArea = All;
 
                 trigger OnAction()

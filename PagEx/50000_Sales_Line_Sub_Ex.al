@@ -1,3 +1,6 @@
+/// <summary>
+/// PageExtension Sales Lines Subform ITB (ID 50000) extends Record Sales Order Subform.
+/// </summary>
 pageextension 50000 "Sales Lines Subform ITB" extends "Sales Order Subform"
 {
     layout
