@@ -6,7 +6,7 @@ xmlport 50001 "50001_Imp_Uni_Ord"
     DefaultFieldsValidation = false;
     Direction = Import;
     FieldDelimiter = '"';
-    FieldSeparator = ';';
+    FieldSeparator = ',';
     FileName = 'S:\C5WIN\Envina\*.csv';
     Format = VariableText;
     Permissions =;
@@ -218,6 +218,13 @@ xmlport 50001 "50001_Imp_Uni_Ord"
         DebName: Text[50];
         GenJourLine: Record "Gen. Journal Line";
         JLineNumber: Integer;
+        Inputvar: List of [Text[20]];  //260822
+        GlobalVar: Codeunit Global_Var;  //290822
+        myinput: dialog;
+        myinputtxt: Text[20];
+        diatest: Boolean; //290822
+        QtyFelt03: Decimal;
+
 
     /*
     EVALUATE(Dag,COPYSTR(Felt02,1,2));
@@ -247,387 +254,718 @@ xmlport 50001 "50001_Imp_Uni_Ord"
         Felt16 := DelChr(Felt16, '>', ' ');
 
         OIOReference := '';
+        FakKonto := Account_Felt01;
 
-        if Lin1 = false then begin
-            OrdKart.RESET;
-            OrdKart.SetRange("No.", Account_Felt01);
-            OrdKart.SetRange("Document Type", OrdKart."Document Type"::Order);
-            if OrdKart.FindSet then begin  //opdater salgsordre
+        OrdKart.RESET;
+        OrdKart.SetRange("No.", FakKonto);
+        OrdKart.SetRange("Document Type", OrdKart."Document Type"::Order);
+        if OrdKart.FindSet then begin
+            OrdNum := OrdKart."No.";
+            //rette salgslinier på eksisterende salgsordre-Evt. lige oprettet.
+            FindItemExistSales();
+            Lin1 := false;
 
-
+        end
+        else begin // check for debitor og opret salgsordre på debitor
+            DebKart.RESET;
+            DebKart.SetRange("No.", FakKonto);
+            if DebKart.FindSet then begin
+                ;
             end
-            else begin // check for debitor og opret salgsordre på debitor
+            else
+                FakKonto := '99999999';
+
+
+            if Lin1 = true then begin
+                Clear(DebKart);
                 DebKart.RESET;
-                DebKart.SetRange("No.", Account_Felt01);
-                if DebKart.FindSet then begin
-                    FakKonto := DebKart."No.";
-                end
-                else begin
-                    FakKonto := '99999999';
-                end;
-                // så oprettes salgsordre på fakkonto ->
-
-            end;
-
-
-            //250718 GenPostSetup.SETRANGE("Gen. Bus. Posting Group",Felt01);
-            IF ((strlen(Account_Felt01) > 0) and (DebKart.FINDSET)) then begin //rediger eksisterende
-                FakKonto := '';
-                DebName := DebKart.Name;
-
-                FakKonto := DebKart."Bill-to Customer No.";
-
-
-
-                if FakKonto = '' then
-                    FakKonto := Account_Felt01;
-                //Message('fakkonto: ' + FakKonto);
-
-                DebKart.Reset;
                 DebKart.SetRange("No.", FakKonto);
                 if DebKart.FindSet then begin
-                    OrdNum := '';
-                    OIOReference := '';
-                    DebStd.Reset;
-                    DebStd.SetRange("No.", Felt05);
-                    if DebStd.FindSet then
-                        OIOReference := DebStd."Fax No.";
-                    if OIOReference = '' then
-                        OIOReference := DebKart."Fax No.";
-                    if OIOReference = '' then
-                        OIOReference := Felt09;
-                    OIOReference := DelChr(OIOReference, '<', ' ');
-                    OIOReference := DelChr(OIOReference, '>', ' ');
-                    //Message('gln: ' + OIOReference);
-                    OrdKart.Reset;   //External doc er Reference
-                    OrdKart.SetRange("Bill-to Customer No.", FakKonto);
-                    if OIOReference <> '' then
-                        OrdKart.SetRange("External Document No.", OIOReference)
-                    else
-                        OrdKart.SetRange("External Document No.", '.');
-                    if OrdKart.FindSet then
-                        OrdNum := OrdKart."No.";
+                    //opret salgsordre og første linie
+                    FakKonto := DebKart."No.";
 
-                    LineNo := 0;
-                    if OrdNum <> '' then begin
-                        OrdLinie.Reset;
-                        OrdLinie.SetRange("Document No.", OrdKart."No.");
-                        if OrdLinie.FindSet then
-                            repeat
-                                if LineNo < OrdLinie."Line No." then
-                                    LineNo := OrdLinie."Line No.";
-                            until OrdLinie.Next = 0;
-                        OrdNum := OrdKart."No.";
-                        Number := OrdKart."No.";
+                    Clear(OrdKart);
 
-                    end
-                    else begin  //Så skal der oprettes en ny salgsordre-Hoved
-                        OrdKart.Reset;
-                        Clear(OrdKart);
-                        OrdKart."Document Type" := OrdKart."Document Type"::Order;
-                        //OrdKart.InitInsert;
-                        //OrdKart.InitRecord;
-                        //Message(OrdKart."No.");
-                        //Message('ej ordkart: ' + DebKart."No.");
-                        OrdKart.Validate(OrdKart."Sell-to Customer No.", DebKart."No.");
-                        OrdKart.Validate(OrdKart."Bill-to Customer No.", DebKart."No.");
-
-                        if OrdKart."VAT Registration No." = '' then
-                            OrdKart."VAT Registration No." := '00000000';
-
-                        if ((OrdKart."Bill-to Customer No." <> '') and (DebKart."VAT Registration No." <> '')) then
-                            OrdKart."VAT Registration No." := DebKart."VAT Registration No.";
-
-                        //EAN / GLN er på debitor
-
-                        if Felt04 <> '' then
-                            OrdKart."Sell-to E-Mail" := Felt04
-                        else
-                            OrdKart."Sell-to E-Mail" := DebKart."E-Mail";
-
-                        OrdKart.Status := OrdKart.Status::Open;  //alternativt frigivet/released                        
-
-                        OrdKart."Shipment Date" := Today;
-
-                        //if FakKart."Fax No." <> '' then
-                        OrdKart."Your Reference" := OIOReference;   //FakKart."Fax No.";
-                                                                    //if FakKart."Fax No." <> '' then
-                        OrdKart."External Document No." := OIOReference;   //FakKart."Fax No.";
-
-                        if OIOReference = '' then begin
-                            OrdKart."Your Reference" := Account_Felt01;
-                            OrdKart."External Document No." := Account_Felt01;
-                        end;
-
-                        if OIOReference = '' then
-                            OrdKart."External Document No." := '.';
-
-                        if OrdKart."Sell-to Contact" = '' then
-                            OrdKart."Sell-to Contact" := Department_Felt02 + '.';
-
-                        OrdKart."OIOUBL-GLN" := DebKart.GLN;
-
-                        OrdKart.Insert(true);
-                        //Message('efter insert ok: ' + OrdKart."No.");
-                        Number := OrdKart."No.";
+                    "OrdKart"."No." := '';
+                    "OrdKart".Init();
 
 
-                    end;
+                    "OrdKart"."Document Type" := "OrdKart"."Document Type"::Order;
 
-                end;
+                    "OrdKart".Validate("Sell-to Customer No.", DebKart."No.");
+                    //"OrdKart".Validate("Bill-to Customer No.", head.Custaccount); //130122 se nedenstående linie
+                    //"OrdKart".Validate("Bill-to Customer No.", DebKart."Bill-to Customer No.");  //130122
 
-                //Så kommer ordrelinie(r) - A og B medlemmer
+                    if OrdKart."VAT Registration No." = '' then
+                        OrdKart."VAT Registration No." := '00000000';
 
-                //hertil Envina
+                    if ((OrdKart."Bill-to Customer No." <> '') and (DebKart."VAT Registration No." <> '')) then
+                        OrdKart."VAT Registration No." := DebKart."VAT Registration No.";
 
+                    "OrdKart"."Salesperson Code" := DebKart."Salesperson Code";
+                    OrdKart."Sell-to E-Mail" := DebKart."E-Mail";
 
+                    OrdKart.Status := OrdKart.Status::Open;  //alternativt frigivet/released                        
 
-                //if (AMedlem = true) and (btoA = true) then begin
+                    OrdKart."Shipment Date" := Today;
 
+                    //if FakKart."Fax No." <> '' then
+                    OrdKart."Your Reference" := OIOReference;   //FakKart."Fax No.";
+                                                                //if FakKart."Fax No." <> '' then
+                    OrdKart."External Document No." := OIOReference;   //FakKart."Fax No.";
 
-                //Så kommer ordrelinier->
-                Clear(OrdLinie);
-                OrdLinie.validate(OrdLinie."Document Type", OrdKart."Document Type");
-                OrdLinie.Validate(OrdLinie."Document No.", OrdKart."No.");
-                LineNo := LineNo + 10000;
-                OrdLinie."Line No." := LineNo + 10000;
-
-                OrdLinie."Shipment Date" := OrdKart."Shipment Date";
-                OrdLinie.Type := OrdLinie.Type::Item;
-                //OrdLinie.Validate(Type);
-                //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
-
-                if Item.Get(Felt20) then
-                    OrdLinie.Validate("No.", Item."No.")
-                else
-                    Message('Ordre: ' + ordkart."No." + ' - fejl i varenummer');
-
-                if Felt08 <> '' then
-                    OrdLinie.Description := Felt08
-                else
-                    OrdLinie.Description := Item.Description;
-                OrdLinie."Description 2" := Felt05 + ': ' + DebName;
-
-                OrdLinie.Validate(quantity, 1);
-
-                if AMedlem = true then begin
-                    //OrdLinie."Unit Price" := 
-                    Evaluate(OrdLinie."Unit Price", Felt17)
-                end
-                else begin
-                    Evaluate(OrdLinie."Unit Price", Felt18)
-                end;
-                OrdLinie.Validate("Unit Price");
-
-
-                OrdLinie.Validate(ordlinie.Amount, (OrdLinie."Unit Price" * OrdLinie.Quantity));
-                OrdLinie.Validate(OrdLinie."Line Amount", OrdLinie.Quantity * OrdLinie."Unit Price");
-                OrdLinie."Line Amount" := Round(OrdLinie."Line Amount", 0.01, '=');
-
-                OrdLinie."Shipment Date" := OrdKart."Shipment Date";
-                OrdLinie."Unit of Measure" := Item."Sales Unit of Measure";
-                OrdLinie."Qty. to Invoice" := OrdLinie.Quantity;
-                OrdLinie."Qty. to Ship" := OrdLinie.Quantity;
-                OrdLinie."Qty. to Invoice (Base)" := OrdLinie.Quantity;
-                OrdLinie."Qty. to Ship (Base)" := OrdLinie.Quantity;
-                OrdLinie."Unit Cost" := Item."Unit Cost";
-
-                OrdLinie.Insert(true);
-
-                //Så kommer dimensioner
-                if StrLen(Felt21) > 0 then begin
-                    Centre.Reset;
-                    Centre.SetRange("Dimension Code", 'BÆRER');
-                    Centre.SetRange(Code, Felt21);
-                    if Centre.FindSet then begin
-
-                        DimMgt.GetDimensionSet(TempDimSetEntry, OrdLinie."Dimension Set ID");
-                        TempDimSetEntry.Init;
-                        TempDimSetEntry.Validate("Dimension Code", 'BÆRER');
-                        TempDimSetEntry.Validate("Dimension Value Code", Centre.Code);
-                        if not TempDimSetEntry.Insert then
-                            TempDimSetEntry.Modify;
-                        OrdLinie.Validate("Dimension Set ID", DimMgt.GetDimensionSetID(TempDimSetEntry));
-                        OrdLinie.Modify;
-                    end;
-                end;
-                if AMedlem = false then begin
-                    Purpose.Reset;
-                    Purpose.SetRange("Dimension Code", 'FORMÅL');
-                    if AMedlem = true then
-                        Purpose.SetRange(Code, '')
-                    else
-                        Purpose.SetRange(Code, '02');
-
-                    if Purpose.FindSet then begin //OR Amedlem = True then begin
-
-
-                        DimMgt.GetDimensionSet(TempDimSetEntry, OrdLinie."Dimension Set ID");
-                        TempDimSetEntry.Init;
-                        TempDimSetEntry.Validate("Dimension Code", 'FORMÅL');
-                        if AMedlem = false then
-                            TempDimSetEntry.Validate("Dimension Value Code", Purpose.Code)
-                        else
-                            TempDimSetEntry.Validate("Dimension Value Code", '');
-                        if not TempDimSetEntry.Insert then
-                            TempDimSetEntry.Modify;
-                        OrdLinie.Validate("Dimension Set ID", DimMgt.GetDimensionSetID(TempDimSetEntry));
-
-                        if OrdLinie."Dimension Set ID" = 0 then
-                            OrdLinie."Dimension Set ID" := OrdKart."Dimension Set ID";
-
-                        OrdLinie.Modify;
-
-
-                    end;
-                end;  //amedlem
-                      //Så kommer evt. bemærkning/note til linien                               
-
-
-
-                //071021
-                if DebName <> '' then begin
-                    Clear(OrdLinie);
-                    OrdLinie.validate(OrdLinie."Document Type", OrdKart."Document Type");
-                    OrdLinie.Validate(OrdLinie."Document No.", OrdKart."No.");
-                    LineNo := LineNo + 10000;
-                    OrdLinie."Line No." := LineNo + 10000;
-
-                    OrdLinie."Shipment Date" := OrdKart."Shipment Date";
-                    OrdLinie.Type := OrdLinie.Type::"G/L Account";
-                    OrdLinie."No." := '002010';
-                    OrdLinie."Unit of Measure" := 'STK';
-                    //OrdLinie.Validate(Type);
-                    //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
-
-
-                    OrdLinie.Description := Felt05 + ': ' + DebName;
-
-                    //OrdLinie.Validate(quantity, 1);
-
-
-                    OrdLinie.Insert(true);
-                end;  //debitor navn og konto
-
-
-                //Så kommer evt. overnatning
-                if Felt16 <> '' then begin
-                    Clear(OrdLinie);
-                    OrdLinie.validate(OrdLinie."Document Type", OrdKart."Document Type");
-                    OrdLinie.Validate(OrdLinie."Document No.", OrdKart."No.");
-                    LineNo := LineNo + 10000;
-                    OrdLinie."Line No." := LineNo + 10000;
-
-                    OrdLinie."Shipment Date" := OrdKart."Shipment Date";
-                    OrdLinie.Type := OrdLinie.Type::Item;
-                    //OrdLinie.Validate(Type);
-                    //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
-
-                    if Item.Get('3010') then
-                        OrdLinie.Validate("No.", Item."No.")
-                    else
-                        Message('Ordre: ' + ordkart."No." + ' - fejl i varenummer');
-
-                    if Item.Description <> '' then
-                        OrdLinie.Description := Item.Description
-                    else
-                        OrdLinie.Description := 'Overnatning';
-
-                    OrdLinie.Validate(quantity, -1);
-
-                    //if AMedlem = true then begin
-                    //OrdLinie."Unit Price" := 
-                    //    Evaluate(OrdLinie."Unit Price", Felt17)
-                    //end
-                    //else begin
-                    Evaluate(OrdLinie."Unit Price", Felt19);
+                    //if OIOReference = '' then begin
+                    //    OrdKart."Your Reference" := Felt01;
+                    //    OrdKart."External Document No." := Felt01;
                     //end;
-                    OrdLinie.Validate("Unit Price");
 
+                    if OIOReference = '' then
+                        OrdKart."External Document No." := '.';
 
-                    OrdLinie.Validate(ordlinie.Amount, (OrdLinie."Unit Price" * OrdLinie.Quantity));
-                    OrdLinie.Validate(OrdLinie."Line Amount", OrdLinie.Quantity * OrdLinie."Unit Price");
-                    OrdLinie."Line Amount" := Round(OrdLinie."Line Amount", 0.01, '=');
+                    if OrdKart."Sell-to Contact" = '' then
+                        OrdKart."Sell-to Contact" := '.';
 
-                    OrdLinie."Shipment Date" := OrdKart."Shipment Date";
-                    OrdLinie."Unit of Measure" := Item."Sales Unit of Measure";
-                    OrdLinie."Qty. to Invoice" := OrdLinie.Quantity;
-                    OrdLinie."Qty. to Ship" := OrdLinie.Quantity;
-                    OrdLinie."Qty. to Invoice (Base)" := OrdLinie.Quantity;
-                    OrdLinie."Qty. to Ship (Base)" := OrdLinie.Quantity;
-                    OrdLinie."Unit Cost" := Item."Unit Cost";
-
-                    OrdLinie.Insert(true);
-
-                    //Så kommer dimensioner
-                    if StrLen(Felt21) > 0 then begin
-                        Centre.Reset;
-                        Centre.SetRange("Dimension Code", 'BÆRER');
-                        Centre.SetRange(Code, Felt21);
-                        if Centre.FindSet then begin
-
-                            DimMgt.GetDimensionSet(TempDimSetEntry, OrdLinie."Dimension Set ID");
-                            TempDimSetEntry.Init;
-                            TempDimSetEntry.Validate("Dimension Code", 'BÆRER');
-                            TempDimSetEntry.Validate("Dimension Value Code", Centre.Code);
-                            if not TempDimSetEntry.Insert then
-                                TempDimSetEntry.Modify;
-                            OrdLinie.Validate("Dimension Set ID", DimMgt.GetDimensionSetID(TempDimSetEntry));
-                            OrdLinie.Modify;
-                        end;
-                    end;
-
-                    if AMedlem = false then begin
-                        Purpose.Reset;
-                        Purpose.SetRange("Dimension Code", 'FORMÅL');
-                        if AMedlem = true then
-                            Purpose.SetRange(Code, '')
-                        else
-                            Purpose.SetRange(Code, '02');
-
-                        if Purpose.FindSet OR Amedlem = True then begin
-
-
-                            DimMgt.GetDimensionSet(TempDimSetEntry, OrdLinie."Dimension Set ID");
-                            TempDimSetEntry.Init;
-                            TempDimSetEntry.Validate("Dimension Code", 'FORMÅL');
-                            if AMedlem = false then
-                                TempDimSetEntry.Validate("Dimension Value Code", Purpose.Code)
-                            else
-                                TempDimSetEntry.Validate("Dimension Value Code", '');
-                            if not TempDimSetEntry.Insert then
-                                TempDimSetEntry.Modify;
-                            OrdLinie.Validate("Dimension Set ID", DimMgt.GetDimensionSetID(TempDimSetEntry));
-
-                            if OrdLinie."Dimension Set ID" = 0 then
-                                OrdLinie."Dimension Set ID" := OrdKart."Dimension Set ID";
-
-                            OrdLinie.Modify;
-
-
-                        end;
-                    end;  //purpose                    
-                end;
-                //Det var evt. overnatning
-
-                //end
-                //else
-                //    Message('Medlem: ' + Felt05 + ' eksisterer ikke');
-                //end;  //fakkart
-            end; // opret salgsordre når fra B til A medlem
-
-            //150921 until DebKart.NEXT = 0
+                    OrdKart."OIOUBL-GLN" := DebKart.GLN;
 
 
 
+                    "OrdKart".Insert(true);
 
-            // end;
-            //Her over ompostering vedr. B-Medlemmer
+                    OrdNum := OrdKart."No.";
+                    message(Format(OrdNum));
+                    //Commit();
+                    //Så kommer ordrelinie
+
+                end;  //lin1 = false
+            end;
+
+            FindItem();
+
+            lin1 := false;
+
+
+
+        end;
+        // så oprettes salgsordre på fakkonto ->
+        //videre
+        Lin1 := false;
+
+
+    end;
+
+    procedure FindItem()
+
+    var
+        EanItem: Record Item;
+        EanItem02: Record Item;
+        EanTemp: Text[50];
+        SalesItemNo: Code[20];
+        Robert: Text[30];
+        Colli: Decimal;
+        PantLine: Record "Sales Line";
+    //LineNo: Decimal;
+
+    begin
+        Robert := '';
+        SalesItemNo := '';
+        EanTemp := Department_Felt02;   //Rec.EANNr;
+        EanItem.Reset;
+        EanItem.SetRange(EANNr, Department_Felt02);     //Rec.EANNr);
+
+
+        if EanItem.FindSet then
+            SalesItemNo := EanItem."No."
+        else begin
+
+            EanItem.Reset;
+            EanItem.SetRange(EANNr02, Department_Felt02);   //Rec.EANNr);
+            if EanItem.FindSet then
+                SalesItemNo := EanItem."No."
+
         end;
 
-        //end;
+        if SalesItemNo = '' then begin
+            if ((StrLen(Department_Felt02) >= 15) and (CopyStr(Department_Felt02, 1, 1) = 'ù')) then
+                IF CopyStr(Department_Felt02, 1, 2) = 'ùC' THEN begin
+                    Robert := copystr(Department_Felt02, 4, 20);
+                    Department_Felt02 := CopyStr(Department_Felt02, 4, 16);
+                end
+                else begin
+                    Robert := CopyStr(Department_Felt02, 2, 20);
+                    Department_Felt02 := CopyStr(Department_Felt02, 2, 16);
+                end
+            else begin
+                IF ((StrLen(Department_Felt02) > 15) and (CopyStr(Department_Felt02, 1, 1) = ']')) then begin
+                    IF CopyStr(Department_Felt02, 1, 2) = ']C' THEN begin
+                        Robert := copystr(Department_Felt02, 4, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 4, 16);
+                    end
+                    else begin
+                        Robert := CopyStr(Department_Felt02, 2, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 2, 16);
+                    end
+                end
+                else begin
+                    IF StrLen(Department_Felt02) > 15 THEN begin
+                        Robert := CopyStr(Department_Felt02, 1, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 1, 16);
+
+                    end;
+                end;
+            end;
+
+        end;
+
+        if SalesItemNo = '' then begin
+            IF StrLen(Department_Felt02) = 16 then
+                Department_Felt02 := Robert;
+            //SubStr(SalesLine.EANNr,1,StrLen(SalesLine.EANNr)-4)
+        end;
+        EanTemp := Department_Felt02;  //Så skal varenummer mv på linien og valideres mv
+
+
+
+        //else begin  testing 121021
+        EanItem02.Reset;
+        EanItem02.SetRange(EANNr02, Department_Felt02);    //Rec.EANNr);
+
+        if EanItem02.FindSet then begin
+            //tidligere
+            LineNo := LineNo + 10000;
+            Message('ordlin: ' + Format(OrdNum));
+            Clear(OrdLinie);
+            OrdLinie.Init;
+            OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+            OrdLinie.Validate("Document No.", OrdNum);
+            OrdLinie.Type := OrdLinie.Type::Item;
+            OrdLinie."Line No." := LineNo;
+            OrdLinie.Validate(Type);
+            //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+            OrdLinie.Validate("No.", EanItem02."No.");
+            OrdLinie.Validate("Unit Price");
+            //HUSK EVALUATE ANTAL
+            Evaluate(QtyFelt03, Balance01_Felt03);
+            Colli := EanItem02.KartAntal;
+
+            if Colli <> 0 then begin
+
+                OrdLinie.QtyColli := QtyFelt03;  //1 pr. 121121 Colli;
+                OrdLinie.Validate(Quantity, QtyFelt03 * Colli);
+
+            end
+            else begin
+                OrdLinie.QtyColli := 0;
+                OrdLinie.Validate(Quantity, QtyFelt03);
+            end;
+
+            //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+            OrdLinie.Validate("Line Discount %");
+            //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+            OrdLinie.Validate("Line No.", LineNo);
+            OrdLinie.Mangde := EanItem02.Mangde;  //HBK / ITB - 091221
+            OrdLinie.EANNr := EanItem02.EANNr;
+
+            OrdLinie.Insert(true);
+            //tidligere
+
+            SalesItemNo := EanItem02."No.";
+
+
+            //Pantlinie
+            if StrLen(EanItem02.PantItem) > 2 then begin
+                Clear(PantLine);
+                PantLine.Init;
+                //310822  LineNo := OrdLinie."Line No." - 500;
+                PantLine.Validate("Line No.", LineNo - 500);
+
+                PantLine.Validate("Document Type", OrdLinie."Document Type");
+                PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                PantLine.Type := PantLine.Type::Item;
+                PantLine.Validate("No.", EanItem02.PantItem);
+
+                PantLine.Validate(Quantity, OrdLinie.Quantity);
+                PantLine.QtyColli := 0;
+
+                //141221 PantLine.EANNr := EanItem.EANNr;
+                PantLine.EANNr := EanItem02.EANNr;  //141221
+
+                PantLine.Insert(true);
+
+                OrdLinie.PantLineNo := PantLine."Line No.";
+                OrdLinie.Modify;
+                //PantLinie                            
+
+
+            end;  //if pantitem
+
+
+            //141221  end;
+
+            //Rec.EANNr := EanTemp;//
+        end
+        else begin
+            EanItem.Reset;
+            EanItem.SetRange(EANNr, Department_Felt02);    //Rec.EANNr);
+
+            if EanItem.FindSet then begin
+
+                //tidligere
+                //tidligere
+                LineNo := LineNo + 10000;
+                Message('ordlin: ' + Format(OrdNum));
+                Clear(OrdLinie);
+                OrdLinie.Init;
+                OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+                OrdLinie.Validate("Document No.", OrdNum);
+                OrdLinie.Type := OrdLinie.Type::Item;
+                OrdLinie."Line No." := LineNo;
+                OrdLinie.Validate(Type);
+                //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+                OrdLinie.Validate("No.", EanItem."No.");
+                OrdLinie.Validate("Unit Price");
+                //HUSK EVALUATE ANTAL
+                Evaluate(QtyFelt03, Balance01_Felt03);
+                //Colli := EanItem02.KartAntal;
+
+
+                OrdLinie.QtyColli := 0;
+                OrdLinie.Validate(Quantity, QtyFelt03);
+
+
+                //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+                OrdLinie.Validate("Line Discount %");
+                //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+                OrdLinie.Validate("Line No.", LineNo);
+                OrdLinie.Mangde := EanItem.Mangde;  //HBK / ITB - 091221
+                OrdLinie.EANNr := EanItem.EANNr;
+
+                OrdLinie.Insert(true);
+                //tidligere
+
+                SalesItemNo := EanItem."No.";
+
+
+                //Pantlinie
+                if StrLen(EanItem.PantItem) > 2 then begin
+                    Clear(PantLine);
+                    PantLine.Init;
+                    //310822  LineNo := OrdLinie."Line No." - 500;
+                    PantLine.Validate("Line No.", LineNo - 500);
+
+                    PantLine.Validate("Document Type", OrdLinie."Document Type");
+                    PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                    PantLine.Type := PantLine.Type::Item;
+                    PantLine.Validate("No.", EanItem.PantItem);
+
+                    PantLine.Validate(Quantity, OrdLinie.Quantity);
+                    PantLine.QtyColli := 0;
+
+                    //141221 PantLine.EANNr := EanItem.EANNr;
+                    PantLine.EANNr := EanItem.EANNr;  //141221
+
+                    PantLine.Insert(true);
+
+                    OrdLinie.PantLineNo := PantLine."Line No.";
+                    OrdLinie.Modify;
+                    //PantLinie                            
+
+
+                end;  //if pantitem
+            end
+            //tidligere
+
+            //121121
+            //121121
+            else begin
+                EanItem.Reset;
+                EanItem.SetRange("No.", Department_Felt02);   //Rec.EANNr);
+                if EanItem.FindSet then begin
+                    //tidligere
+                    LineNo := LineNo + 10000;
+                    Message('ordlin: ' + Format(OrdNum));
+                    Clear(OrdLinie);
+                    OrdLinie.Init;
+                    OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+                    OrdLinie.Validate("Document No.", OrdNum);
+                    OrdLinie.Type := OrdLinie.Type::Item;
+                    OrdLinie."Line No." := LineNo;
+                    OrdLinie.Validate(Type);
+                    //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+                    OrdLinie.Validate("No.", EanItem."No.");
+                    OrdLinie.Validate("Unit Price");
+                    //HUSK EVALUATE ANTAL
+                    Evaluate(QtyFelt03, Balance01_Felt03);
+                    //Colli := EanItem02.KartAntal;
+
+
+                    OrdLinie.QtyColli := 0;
+                    OrdLinie.Validate(Quantity, QtyFelt03);
+
+
+                    //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+                    OrdLinie.Validate("Line Discount %");
+                    //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+                    OrdLinie.Validate("Line No.", LineNo);
+                    OrdLinie.Mangde := EanItem.Mangde;  //HBK / ITB - 091221
+                    OrdLinie.EANNr := EanItem.EANNr;
+
+                    OrdLinie.Insert(true);
+                    //tidligere
+
+                    SalesItemNo := EanItem."No.";
+
+
+
+                    //Pantlinie
+                    if StrLen(EanItem.PantItem) > 2 then begin
+                        Clear(PantLine);
+                        PantLine.Init;
+                        //310822  LineNo := OrdLinie."Line No." - 500;
+                        PantLine.Validate("Line No.", LineNo - 500);
+
+                        PantLine.Validate("Document Type", OrdLinie."Document Type");
+                        PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                        PantLine.Type := PantLine.Type::Item;
+                        PantLine.Validate("No.", EanItem.PantItem);
+
+                        PantLine.Validate(Quantity, OrdLinie.Quantity);
+                        PantLine.QtyColli := 0;
+
+                        //141221 PantLine.EANNr := EanItem.EANNr;
+                        PantLine.EANNr := EanItem.EANNr;  //141221
+
+                        PantLine.Insert(true);
+
+                        OrdLinie.PantLineNo := PantLine."Line No.";
+                        OrdLinie.Modify;
+                        //PantLinie                            
+
+
+                    end;  //if pantitem                    
+
+                    //tidligere
+
+                end;
+                //121121                          
+
+                //121121
+
+            end;
+            //end; testing 121021
+        end;
+
         Lin1 := false;
     end;
 
+
+    procedure FindItemExistSales()
+
+    var
+        EanItem: Record Item;
+        EanItem02: Record Item;
+        EanTemp: Text[50];
+        SalesItemNo: Code[20];
+        Robert: Text[30];
+        Colli: Decimal;
+        PantLine: Record "Sales Line";
+    //LineNo: Decimal;
+
+    begin
+        Robert := '';
+        SalesItemNo := '';
+        EanTemp := Department_Felt02;   //Rec.EANNr;
+        EanItem.Reset;
+        EanItem.SetRange(EANNr, Department_Felt02);     //Rec.EANNr);
+
+
+        if EanItem.FindSet then
+            SalesItemNo := EanItem."No."
+        else begin
+
+            EanItem.Reset;
+            EanItem.SetRange(EANNr02, Department_Felt02);   //Rec.EANNr);
+            if EanItem.FindSet then
+                SalesItemNo := EanItem."No."
+
+        end;
+
+        if SalesItemNo = '' then begin
+            if ((StrLen(Department_Felt02) >= 15) and (CopyStr(Department_Felt02, 1, 1) = 'ù')) then
+                IF CopyStr(Department_Felt02, 1, 2) = 'ùC' THEN begin
+                    Robert := copystr(Department_Felt02, 4, 20);
+                    Department_Felt02 := CopyStr(Department_Felt02, 4, 16);
+                end
+                else begin
+                    Robert := CopyStr(Department_Felt02, 2, 20);
+                    Department_Felt02 := CopyStr(Department_Felt02, 2, 16);
+                end
+            else begin
+                IF ((StrLen(Department_Felt02) > 15) and (CopyStr(Department_Felt02, 1, 1) = ']')) then begin
+                    IF CopyStr(Department_Felt02, 1, 2) = ']C' THEN begin
+                        Robert := copystr(Department_Felt02, 4, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 4, 16);
+                    end
+                    else begin
+                        Robert := CopyStr(Department_Felt02, 2, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 2, 16);
+                    end
+                end
+                else begin
+                    IF StrLen(Department_Felt02) > 15 THEN begin
+                        Robert := CopyStr(Department_Felt02, 1, 20);
+                        Department_Felt02 := CopyStr(Department_Felt02, 1, 16);
+
+                    end;
+                end;
+            end;
+
+        end;
+
+        if SalesItemNo = '' then begin
+            IF StrLen(Department_Felt02) = 16 then
+                Department_Felt02 := Robert;
+            //SubStr(SalesLine.EANNr,1,StrLen(SalesLine.EANNr)-4)
+        end;
+        EanTemp := Department_Felt02;  //Så skal varenummer mv på linien og valideres mv
+
+
+
+        //else begin  testing 121021
+        EanItem02.Reset;
+        EanItem02.SetRange(EANNr02, Department_Felt02);    //Rec.EANNr);
+
+        if EanItem02.FindSet then begin
+            //tidligere
+            LineNo := LineNo + 10000;
+            Message('ordlin: ' + Format(OrdNum));
+            Clear(OrdLinie);
+            OrdLinie.Init;
+            OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+            OrdLinie.Validate("Document No.", OrdNum);
+            OrdLinie.Type := OrdLinie.Type::Item;
+            OrdLinie."Line No." := LineNo;
+            OrdLinie.Validate(Type);
+            //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+            OrdLinie.Validate("No.", EanItem02."No.");
+            OrdLinie.Validate("Unit Price");
+            //HUSK EVALUATE ANTAL
+            Evaluate(QtyFelt03, Balance01_Felt03);
+            Colli := EanItem02.KartAntal;
+
+            if Colli <> 0 then begin
+
+                OrdLinie.QtyColli := QtyFelt03;  //1 pr. 121121 Colli;
+                OrdLinie.Validate(Quantity, QtyFelt03 * Colli);
+
+            end
+            else begin
+                OrdLinie.QtyColli := 0;
+                OrdLinie.Validate(Quantity, QtyFelt03);
+            end;
+
+            //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+            OrdLinie.Validate("Line Discount %");
+            //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+            OrdLinie.Validate("Line No.", LineNo);
+            OrdLinie.Mangde := EanItem02.Mangde;  //HBK / ITB - 091221
+            OrdLinie.EANNr := EanItem02.EANNr;
+
+            OrdLinie.Insert(true);
+            //tidligere
+
+            SalesItemNo := EanItem02."No.";
+
+
+            //Pantlinie
+            if StrLen(EanItem02.PantItem) > 2 then begin
+                Clear(PantLine);
+                PantLine.Init;
+                //310822  LineNo := OrdLinie."Line No." - 500;
+                PantLine.Validate("Line No.", LineNo - 500);
+
+                PantLine.Validate("Document Type", OrdLinie."Document Type");
+                PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                PantLine.Type := PantLine.Type::Item;
+                PantLine.Validate("No.", EanItem02.PantItem);
+
+                PantLine.Validate(Quantity, OrdLinie.Quantity);
+                PantLine.QtyColli := 0;
+
+                //141221 PantLine.EANNr := EanItem.EANNr;
+                PantLine.EANNr := EanItem02.EANNr;  //141221
+
+                PantLine.Insert(true);
+
+                OrdLinie.PantLineNo := PantLine."Line No.";
+                OrdLinie.Modify;
+                //PantLinie                            
+
+
+            end;  //if pantitem
+
+
+            //141221  end;
+
+            //Rec.EANNr := EanTemp;//
+        end
+        else begin
+            EanItem.Reset;
+            EanItem.SetRange(EANNr, Department_Felt02);    //Rec.EANNr);
+
+            if EanItem.FindSet then begin
+
+                //tidligere
+                //tidligere
+                LineNo := LineNo + 10000;
+                Message('ordlin: ' + Format(OrdNum));
+                Clear(OrdLinie);
+                OrdLinie.Init;
+                OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+                OrdLinie.Validate("Document No.", OrdNum);
+                OrdLinie.Type := OrdLinie.Type::Item;
+                OrdLinie."Line No." := LineNo;
+                OrdLinie.Validate(Type);
+                //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+                OrdLinie.Validate("No.", EanItem."No.");
+                OrdLinie.Validate("Unit Price");
+                //HUSK EVALUATE ANTAL
+                Evaluate(QtyFelt03, Balance01_Felt03);
+                //Colli := EanItem02.KartAntal;
+
+
+                OrdLinie.QtyColli := 0;
+                OrdLinie.Validate(Quantity, QtyFelt03);
+
+
+                //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+                OrdLinie.Validate("Line Discount %");
+                //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+                OrdLinie.Validate("Line No.", LineNo);
+                OrdLinie.Mangde := EanItem.Mangde;  //HBK / ITB - 091221
+                OrdLinie.EANNr := EanItem.EANNr;
+
+                OrdLinie.Insert(true);
+                //tidligere
+
+                SalesItemNo := EanItem."No.";
+
+
+                //Pantlinie
+                if StrLen(EanItem.PantItem) > 2 then begin
+                    Clear(PantLine);
+                    PantLine.Init;
+                    //310822  LineNo := OrdLinie."Line No." - 500;
+                    PantLine.Validate("Line No.", LineNo - 500);
+
+                    PantLine.Validate("Document Type", OrdLinie."Document Type");
+                    PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                    PantLine.Type := PantLine.Type::Item;
+                    PantLine.Validate("No.", EanItem.PantItem);
+
+                    PantLine.Validate(Quantity, OrdLinie.Quantity);
+                    PantLine.QtyColli := 0;
+
+                    //141221 PantLine.EANNr := EanItem.EANNr;
+                    PantLine.EANNr := EanItem.EANNr;  //141221
+
+                    PantLine.Insert(true);
+
+                    OrdLinie.PantLineNo := PantLine."Line No.";
+                    OrdLinie.Modify;
+                    //PantLinie                            
+
+
+                end;  //if pantitem
+            end
+            //tidligere
+
+            //121121
+            //121121
+            else begin
+                EanItem.Reset;
+                EanItem.SetRange("No.", Department_Felt02);   //Rec.EANNr);
+                if EanItem.FindSet then begin
+                    //tidligere
+                    LineNo := LineNo + 10000;
+                    Message('ordlin: ' + Format(OrdNum));
+                    Clear(OrdLinie);
+                    OrdLinie.Init;
+                    OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+                    OrdLinie.Validate("Document No.", OrdNum);
+                    OrdLinie.Type := OrdLinie.Type::Item;
+                    OrdLinie."Line No." := LineNo;
+                    OrdLinie.Validate(Type);
+                    //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+                    OrdLinie.Validate("No.", EanItem."No.");
+                    OrdLinie.Validate("Unit Price");
+                    //HUSK EVALUATE ANTAL
+                    Evaluate(QtyFelt03, Balance01_Felt03);
+                    //Colli := EanItem02.KartAntal;
+
+
+                    OrdLinie.QtyColli := 0;
+                    OrdLinie.Validate(Quantity, QtyFelt03);
+
+
+                    //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+                    OrdLinie.Validate("Line Discount %");
+                    //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+                    OrdLinie.Validate("Line No.", LineNo);
+                    OrdLinie.Mangde := EanItem.Mangde;  //HBK / ITB - 091221
+                    OrdLinie.EANNr := EanItem.EANNr;
+
+                    OrdLinie.Insert(true);
+                    //tidligere
+
+                    SalesItemNo := EanItem."No.";
+
+
+
+                    //Pantlinie
+                    if StrLen(EanItem.PantItem) > 2 then begin
+                        Clear(PantLine);
+                        PantLine.Init;
+                        //310822  LineNo := OrdLinie."Line No." - 500;
+                        PantLine.Validate("Line No.", LineNo - 500);
+
+                        PantLine.Validate("Document Type", OrdLinie."Document Type");
+                        PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                        PantLine.Type := PantLine.Type::Item;
+                        PantLine.Validate("No.", EanItem.PantItem);
+
+                        PantLine.Validate(Quantity, OrdLinie.Quantity);
+                        PantLine.QtyColli := 0;
+
+                        //141221 PantLine.EANNr := EanItem.EANNr;
+                        PantLine.EANNr := EanItem.EANNr;  //141221
+
+                        PantLine.Insert(true);
+
+                        OrdLinie.PantLineNo := PantLine."Line No.";
+                        OrdLinie.Modify;
+                        //PantLinie                            
+
+
+                    end;  //if pantitem                    
+
+                    //tidligere
+
+                end;
+                //121121                          
+
+                //121121
+
+            end;
+            //end; testing 121021
+        end;
+
+        Lin1 := false;
+    end;
 
 }

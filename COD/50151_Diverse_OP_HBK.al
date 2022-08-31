@@ -35,15 +35,29 @@ codeunit 50151 "50151_Diverse_OP_ERPG"
                 end;
             6:
                 begin
-                    Message('CHECK KOST');
-                    Currency.GetLastestExchangeRate('NOK', DateT, CurrencyExRate);
-                    Message(Format(CurrencyExRate));
-                    Currency.GetLastestExchangeRate('SEK', DateT, CurrencyExRate);
-                    Message(Format(CurrencyExRate));
-                    Currency.GetLastestExchangeRate('EUR', DateT, CurrencyExRate);
-                    Message(Format(CurrencyExRate));
+                    //globalvar.TermOrd_Get(glo_account, glo_Ordref);
+                    glo_account := 'acc_11';
+                    glo_Ordref := 'or_22';
+                    glo_Item := 'it_33';
+
+
+                    globalvar.TermOrd_Save(glo_account, glo_Ordref, glo_item);
+
+                    //Message(glo_account);
+                    //Message(glo_Ordref);
+                    //Message(glo_Item);
+                    //cust.Reset;
+                    //cust.SetRange("No.", '10000');
+                    //if cust.FindSet then
+                    //Page.Run(Page::ITB_Dialog_INPUT, Cust);
+                    //Page.Run(Page::ITB_Dialog_INPUT);
+
+                    Message('efter page');
+
                 end;
         end;
+
+
         /* 230719 
         cust.Reset();
         cust.SetRange("Gen. Bus. Posting Group", '11');
@@ -474,6 +488,15 @@ codeunit 50151 "50151_Diverse_OP_ERPG"
         DateT: Date;
         CurrencyExRate: Decimal;
         currency: Record "Currency Exchange Rate";
+
+        custtemp: Record Customer;
+
+        Inputvar: List of [Text[20]];
+        glo_account: Text[20];
+        glo_Ordref: Text[20];
+        glo_Item: Text[20];
+        globalvar: Codeunit Global_Var;
+
 
 }
 
