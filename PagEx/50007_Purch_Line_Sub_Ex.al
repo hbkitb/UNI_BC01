@@ -294,6 +294,15 @@ pageextension 50007 "Purch Lines Subform ITB" extends "Purchase Order Subform"
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
     var
 
 }

@@ -123,7 +123,17 @@ xmlport 50001 "50001_Imp_Uni_Ord"
 
                     IF Account_Felt01 <> '' THEN begin
 
-                        GenPostSetupImp;  //bogopsæt
+                        //260222       GenPostSetupImp;  //bogopsæt
+                        Clear(TermDiv);
+                        TermDiv.Reset();
+                        ;
+                        TermDiv.Init;
+                        TermDiv.UserId_ := UserId;
+                        TermDiv.A := Account_Felt01;
+                        TermDiv.B := Department_Felt02;
+                        TermDiv.E := Balance01_Felt03;
+                        TermDiv.Insert;
+
                         Lin1 := false;
 
                     end;
@@ -147,6 +157,8 @@ xmlport 50001 "50001_Imp_Uni_Ord"
 
     trigger OnPostXmlPort()
     begin
+        Page.Run(Page::ITB_Dialog_INPUT);  //260922
+
         MESSAGE('Import er færdig !');  //
     end;
 
@@ -224,6 +236,7 @@ xmlport 50001 "50001_Imp_Uni_Ord"
         myinputtxt: Text[20];
         diatest: Boolean; //290822
         QtyFelt03: Decimal;
+        TermDiv: Record Term_div;   //260922
 
 
     /*
@@ -742,74 +755,106 @@ xmlport 50001 "50001_Imp_Uni_Ord"
             LineNo := LineNo + 10000;
             Message('ordlin: ' + Format(OrdNum));
             Clear(OrdLinie);
-            OrdLinie.Init;
-            OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
-            OrdLinie.Validate("Document No.", OrdNum);
-            OrdLinie.Type := OrdLinie.Type::Item;
-            OrdLinie."Line No." := LineNo;
-            OrdLinie.Validate(Type);
-            //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
-            OrdLinie.Validate("No.", EanItem02."No.");
-            OrdLinie.Validate("Unit Price");
-            //HUSK EVALUATE ANTAL
-            Evaluate(QtyFelt03, Balance01_Felt03);
-            Colli := EanItem02.KartAntal;
+            OrdLinie.SetRange("Document No.", OrdNum);
+            OrdLinie.SetRange("No.", EanItem02."No.");
+            if OrdLinie.FindSet then begin
+                //Ved eksisterende ordrelinie  -  050922
+                Evaluate(QtyFelt03, Balance01_Felt03);
+                Colli := EanItem02.KartAntal;
 
-            if Colli <> 0 then begin
+                if Colli <> 0 then begin
 
-                OrdLinie.QtyColli := QtyFelt03;  //1 pr. 121121 Colli;
-                OrdLinie.Validate(Quantity, QtyFelt03 * Colli);
+                    OrdLinie.QtyColli := QtyFelt03;  //1 pr. 121121 Colli;
+                    OrdLinie.Validate(Quantity, QtyFelt03 * Colli);
+
+                end
+                else begin
+                    OrdLinie.QtyColli := 0;
+                    OrdLinie.Validate(Quantity, QtyFelt03);
+                end;
+                OrdLinie.Modify;
+                //ved eksist  - 050922
 
             end
-            else begin
-                OrdLinie.QtyColli := 0;
-                OrdLinie.Validate(Quantity, QtyFelt03);
+            else begin   //opret ny hvis ordrelinie ikke findes
+                Clear(OrdLinie);
+                OrdLinie.SetRange("Document No.", OrdNum);
+                OrdLinie.SetRange("Document Type", OrdLinie."Document Type"::Order);
+                LineNo := 0;
+                if OrdLinie.FindSet then begin
+                    if OrdLinie."Line No." > LineNo then
+                        LineNo := OrdLinie."Line No.";
+                end;
+                LineNo := LineNo + 10000;
+                Clear(OrdLinie);
+                OrdLinie.Init;
+                OrdLinie.Validate("Document Type", OrdLinie."Document Type"::Order);
+                OrdLinie.Validate("Document No.", OrdNum);
+                OrdLinie.Type := OrdLinie.Type::Item;
+                OrdLinie."Line No." := LineNo;
+                OrdLinie.Validate(Type);
+                //"Sales Line".Description := 'beskr. fra varen';  //FSLines.description;
+                OrdLinie.Validate("No.", EanItem02."No.");
+                OrdLinie.Validate("Unit Price");
+                //HUSK EVALUATE ANTAL
+                Evaluate(QtyFelt03, Balance01_Felt03);
+                Colli := EanItem02.KartAntal;
+
+                if Colli <> 0 then begin
+
+                    OrdLinie.QtyColli := QtyFelt03;  //1 pr. 121121 Colli;
+                    OrdLinie.Validate(Quantity, QtyFelt03 * Colli);
+
+                end
+                else begin
+                    OrdLinie.QtyColli := 0;
+                    OrdLinie.Validate(Quantity, QtyFelt03);
+                end;
+
+                //310822  OrdLinie.Validate(Quantity, QtyFelt03);
+                OrdLinie.Validate("Line Discount %");
+                //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
+                OrdLinie.Validate("Line No.", LineNo);
+                OrdLinie.Mangde := EanItem02.Mangde;  //HBK / ITB - 091221
+                OrdLinie.EANNr := EanItem02.EANNr;
+
+                OrdLinie.Insert(true);
+                //tidligere
+
+                SalesItemNo := EanItem02."No.";
+
+
+                //Pantlinie
+                if StrLen(EanItem02.PantItem) > 2 then begin
+                    Clear(PantLine);
+                    PantLine.Init;
+                    //310822  LineNo := OrdLinie."Line No." - 500;
+                    PantLine.Validate("Line No.", LineNo - 500);
+
+                    PantLine.Validate("Document Type", OrdLinie."Document Type");
+                    PantLine.Validate("Document No.", OrdLinie."Document No.");
+
+                    PantLine.Type := PantLine.Type::Item;
+                    PantLine.Validate("No.", EanItem02.PantItem);
+
+                    PantLine.Validate(Quantity, OrdLinie.Quantity);
+                    PantLine.QtyColli := 0;
+
+                    //141221 PantLine.EANNr := EanItem.EANNr;
+                    PantLine.EANNr := EanItem02.EANNr;  //141221
+
+                    PantLine.Insert(true);
+
+                    OrdLinie.PantLineNo := PantLine."Line No.";
+                    OrdLinie.Modify;
+                    //PantLinie                            
+
+
+                end;  //if pantitem
+
+
+                //141221  end;
             end;
-
-            //310822  OrdLinie.Validate(Quantity, QtyFelt03);
-            OrdLinie.Validate("Line Discount %");
-            //"Sales Line".Validate("Unit Price", FSLines.SalesPrice); //301221
-            OrdLinie.Validate("Line No.", LineNo);
-            OrdLinie.Mangde := EanItem02.Mangde;  //HBK / ITB - 091221
-            OrdLinie.EANNr := EanItem02.EANNr;
-
-            OrdLinie.Insert(true);
-            //tidligere
-
-            SalesItemNo := EanItem02."No.";
-
-
-            //Pantlinie
-            if StrLen(EanItem02.PantItem) > 2 then begin
-                Clear(PantLine);
-                PantLine.Init;
-                //310822  LineNo := OrdLinie."Line No." - 500;
-                PantLine.Validate("Line No.", LineNo - 500);
-
-                PantLine.Validate("Document Type", OrdLinie."Document Type");
-                PantLine.Validate("Document No.", OrdLinie."Document No.");
-
-                PantLine.Type := PantLine.Type::Item;
-                PantLine.Validate("No.", EanItem02.PantItem);
-
-                PantLine.Validate(Quantity, OrdLinie.Quantity);
-                PantLine.QtyColli := 0;
-
-                //141221 PantLine.EANNr := EanItem.EANNr;
-                PantLine.EANNr := EanItem02.EANNr;  //141221
-
-                PantLine.Insert(true);
-
-                OrdLinie.PantLineNo := PantLine."Line No.";
-                OrdLinie.Modify;
-                //PantLinie                            
-
-
-            end;  //if pantitem
-
-
-            //141221  end;
-
             //Rec.EANNr := EanTemp;//
         end
         else begin

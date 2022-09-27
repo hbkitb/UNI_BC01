@@ -389,6 +389,17 @@ pageextension 50000 "Sales Lines Subform ITB" extends "Sales Order Subform"
     }
     */
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
+
+
     var
 
 }

@@ -286,6 +286,15 @@ pageextension 50009 "Purch InvLines Subform ITB" extends "Purch. Invoice Subform
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
     var
 
 }

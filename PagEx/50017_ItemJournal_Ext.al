@@ -68,4 +68,14 @@ pageextension 50017 "ItemJour_Ext" extends "Item Journal"
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
+
 }

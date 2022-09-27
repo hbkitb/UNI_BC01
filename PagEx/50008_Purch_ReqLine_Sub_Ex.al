@@ -285,6 +285,15 @@ pageextension 50008 "Purch ReqLines Subform ITB" extends "Purchase Quote Subform
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
     var
 
 }

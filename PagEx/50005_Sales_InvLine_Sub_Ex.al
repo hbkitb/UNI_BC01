@@ -370,6 +370,16 @@ pageextension 50005 "Sales InvLines Subform ITB" extends "Sales Invoice Subform"
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
+
     var
 
 }

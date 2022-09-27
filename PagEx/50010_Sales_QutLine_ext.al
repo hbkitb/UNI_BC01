@@ -585,6 +585,15 @@ pageextension 50010 "Sales Qut lines subform ITB" extends "Sales Quote Subform"
 
     }
 
+    trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        global: Codeunit GlobalsExchange;
+
+    begin
+        global.UsrLoc_Get(Rec."Location Code");
+        Rec.Validate("Location Code");
+    end;
+
     var
 
 }
